@@ -121,7 +121,7 @@ with tab1:
 
         st.markdown("#### 3. 업무와 관련하여 일하시는 중 산업재해 혹은 사고 경험이 있습니까?")
         accident_exp = st.radio(
-            "산업재해/사고 경험", ["예", "아니오"], horizontal=True,
+            "산업재해/사고 경험", ["예", "아니오"], index=1, horizontal=True,
             label_visibility="collapsed", key="accident_exp",
         )
 
@@ -131,7 +131,7 @@ with tab1:
             "다치지는 않았으나 부상으로 이어질 가능성이 있었던 경험"
         )
         near_miss_exp = st.radio(
-            "아차사고 경험", ["예", "아니오"], horizontal=True,
+            "아차사고 경험", ["예", "아니오"], index=1, horizontal=True,
             label_visibility="collapsed", key="near_miss_exp",
         )
 
