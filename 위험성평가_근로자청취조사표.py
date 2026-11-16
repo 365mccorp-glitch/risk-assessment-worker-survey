@@ -1,6 +1,11 @@
 import io
+import smtplib
 import uuid
 from datetime import datetime
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import pandas as pd
 import streamlit as st
@@ -8,6 +13,8 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 st.set_page_config(page_title="위험성평가 근로자청취조사표", layout="wide")
+
+RECEIVER_EMAIL = "365mccorp@gmail.com"
 
 if "risk_interview_records" not in st.session_state:
     st.session_state.risk_interview_records = []
@@ -48,6 +55,50 @@ def build_response_docx(record):
     buffer = io.BytesIO()
     doc.save(buffer)
     return buffer.getvalue()
+
+
+def send_response_email(record, docx_bytes):
+    """제출된 응답을 워드 파일 첨부와 함께 관리자 이메일로 발송"""
+    sender_email = st.secrets.get("EMAIL_SENDER")
+    sender_password = st.secrets.get("EMAIL_PASSWORD")
+    if not sender_email or not sender_password:
+        return False, "이메일 발송 설정(Secrets: EMAIL_SENDER / EMAIL_PASSWORD)이 되어 있지 않습니다."
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = RECEIVER_EMAIL
+    msg["Subject"] = f"[위험성평가 근로자청취조사표] {record['소속']} {record['부서']} {record['성명']} 제출"
+
+    body = (
+        f"소속: {record['소속']}\n"
+        f"부서: {record['부서']}\n"
+        f"성명: {record['성명']}\n"
+        f"담당업무: {record['담당업무']}\n"
+        f"산업재해/사고 경험: {record['산업재해_사고경험']}\n"
+        f"아차사고 경험: {record['아차사고경험']}\n"
+        f"발생경위: {record['발생경위']}\n"
+        f"개선의견: {record['개선의견']}\n"
+        f"제출일시: {record['제출일시']}\n"
+    )
+    msg.attach(MIMEText(body, "plain"))
+
+    attachment = MIMEBase("application", "octet-stream")
+    attachment.set_payload(docx_bytes)
+    encoders.encode_base64(attachment)
+    attachment.add_header(
+        "Content-Disposition",
+        f"attachment; filename=위험성평가_근로자청취조사표_{record['성명']}.docx",
+    )
+    msg.attach(attachment)
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+        return True, None
+    except Exception as e:
+        return False, str(e)
 
 
 st.markdown(
@@ -171,6 +222,13 @@ with tab1:
                 st.session_state.risk_interview_records.append(record)
                 st.session_state.last_submission_id = record["id"]
                 st.success(f"{respondent_name}님의 설문이 제출되었습니다. 협조해 주셔서 감사합니다.")
+
+                docx_bytes = build_response_docx(record)
+                sent_ok, err = send_response_email(record, docx_bytes)
+                if sent_ok:
+                    st.success("관리자에게 이메일로 자동 전송되었습니다.")
+                else:
+                    st.warning(f"이메일 자동 전송에 실패했습니다: {err}")
 
     last_id = st.session_state.last_submission_id
     if last_id:
