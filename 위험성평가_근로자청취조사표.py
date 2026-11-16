@@ -85,10 +85,10 @@ def send_response_email(record, docx_bytes):
     attachment = MIMEBase("application", "octet-stream")
     attachment.set_payload(docx_bytes)
     encoders.encode_base64(attachment)
-    attachment.add_header(
-        "Content-Disposition",
-        f"attachment; filename=위험성평가_근로자청취조사표_{record['소속']}_{record['부서']}_{record['성명']}.docx",
+    attachment_filename = (
+        f"위험성평가_근로자청취조사표_{record['소속']}_{record['부서']}_{record['성명']}.docx"
     )
+    attachment.add_header("Content-Disposition", "attachment", filename=attachment_filename)
     msg.attach(attachment)
 
     try:
