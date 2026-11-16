@@ -87,7 +87,7 @@ def send_response_email(record, docx_bytes):
     encoders.encode_base64(attachment)
     attachment.add_header(
         "Content-Disposition",
-        f"attachment; filename=위험성평가_근로자청취조사표_{record['성명']}.docx",
+        f"attachment; filename=위험성평가_근로자청취조사표_{record['소속']}_{record['부서']}_{record['성명']}.docx",
     )
     msg.attach(attachment)
 
@@ -240,7 +240,7 @@ with tab1:
             st.download_button(
                 "📄 워드(.docx)로 저장",
                 data=build_response_docx(last_record),
-                file_name=f"위험성평가_근로자청취조사표_{last_record['성명']}.docx",
+                file_name=f"위험성평가_근로자청취조사표_{last_record['소속']}_{last_record['부서']}_{last_record['성명']}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True,
                 key=f"download_docx_{last_id}",
